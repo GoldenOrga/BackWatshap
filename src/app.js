@@ -1,5 +1,4 @@
 import * as Sentry from "@sentry/node";
-import "./instrument.js";
 import express from 'express';
 import authRoutes from './routes/auth.js';
 import userRoutes from './routes/users.js';
@@ -9,8 +8,11 @@ import sessionRoutes from './routes/sessions.js';
 import mediaRoutes from './routes/media.js';
 import groupRoutes from './routes/groups.js';
 import auth from "./middleware/auth.js";
+import { initSentry } from "./config/sentry.js";
 
 const app = express();
+
+initSentry(app);
 
 app.use((req, _res, next) => {
   Sentry.addBreadcrumb({
