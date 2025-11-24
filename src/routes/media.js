@@ -13,7 +13,7 @@ import {
 
 const router = express.Router();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const uploadsDir = path.join(__dirname, '../../uploads');
+const uploadsDir = path.join(__dirname, '../../public/uploads');
 
 // --- C'EST ICI QU'ON CHANGE LA CONFIGURATION ---
 const storage = multer.diskStorage({

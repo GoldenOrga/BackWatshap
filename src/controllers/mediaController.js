@@ -8,7 +8,7 @@ import logger from '../config/logger.js';
 import User from '../models/User.js'; 
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const uploadsDir = path.join(__dirname, '../../uploads');
+const uploadsDir = path.join(__dirname, '../../public/uploads');
 
 // Créer le dossier uploads s'il n'existe pas
 if (!fs.existsSync(uploadsDir)) {
