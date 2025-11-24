@@ -19,11 +19,8 @@ const auth = (req, res, next) => {
   try {
     const verified = jwt.verify(token, process.env.JWT_SECRET);
     req.user = { id: verified.id };
-    const currentUser = JSON.parse(localStorage.getItem("user")) || null;
     Sentry.setUser({
       id: verified.id?.toString(),
-      email: currentUser?.email,
-      name: currentUser?.name,
     });
 
     next();
