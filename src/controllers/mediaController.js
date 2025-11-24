@@ -13,6 +13,7 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
+
 export const uploadFile = async (req, res) => {
   try {
     if (!req.file) {
@@ -32,7 +33,7 @@ export const uploadFile = async (req, res) => {
     ];
 
     if (!allowedMimes.includes(req.file.mimetype)) {
-      fs.unlinkSync(req.file.path); // Supprimer le fichier
+      fs.unlinkSync(req.file.path);
       return res.status(400).json({ message: 'Type de fichier non autorisé' });
     }
 
@@ -45,33 +46,41 @@ export const uploadFile = async (req, res) => {
 
     // Déterminer le type d'attachment
     let attachmentType = 'file';
-    if (req.file.mimetype.startsWith('image/')) {
-      attachmentType = 'image';
-    } else if (req.file.mimetype.startsWith('video/')) {
-      attachmentType = 'video';
-    } else if (req.file.mimetype.startsWith('audio/')) {
-      attachmentType = 'audio';
+    if (req.file.mimetype.startsWith('image/')) attachmentType = 'image';
+    else if (req.file.mimetype.startsWith('video/')) attachmentType = 'video';
+    else if (req.file.mimetype.startsWith('audio/')) attachmentType = 'audio';
+
+    if (messageId) {
+      // --- Upload pour message ---
+      const attachment = await Attachment.create({
+        message: messageId,
+        uploader: userId,
+        originalName: req.file.originalname,
+        filename: req.file.filename,
+        mimetype: req.file.mimetype,
+        size: req.file.size,
+        url: `/uploads/${req.file.filename}`,
+        type: attachmentType
+      });
+
+      logger.info('Fichier uploadé pour message', { fileName: req.file.originalname, userId });
+      return res.status(201).json(attachment);
+    } else {
+      // --- Upload pour avatar ---
+      const updatedUser = await User.findByIdAndUpdate(
+        userId,
+        { avatar: `/uploads/${req.file.filename}` },
+        { new: true }
+      ).select('-password');
+
+      logger.info('Avatar utilisateur mis à jour', { userId });
+      return res.status(200).json(updatedUser);
     }
-
-    const attachment = await Attachment.create({
-      message: messageId,
-      uploader: userId,
-      originalName: req.file.originalname,
-      filename: req.file.filename,
-      mimetype: req.file.mimetype,
-      size: req.file.size,
-      url: `/uploads/${req.file.filename}`,
-      type: attachmentType
-    });
-
-    logger.info('Fichier uploadé', { fileName: req.file.originalname, userId });
-    res.status(201).json(attachment);
   } catch (err) {
     logger.error('Erreur lors de l\'upload du fichier', err);
     res.status(500).json({ message: err.message });
   }
 };
-
 export const downloadFile = async (req, res) => {
   try {
     const { fileId } = req.params;
