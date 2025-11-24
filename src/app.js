@@ -1,5 +1,6 @@
 import * as Sentry from "@sentry/node";
 import express from 'express';
+import cors from 'cors';
 import authRoutes from './routes/auth.js';
 import userRoutes from './routes/users.js';
 import messageRoutes from './routes/messages.js';
@@ -11,8 +12,18 @@ import auth from "./middleware/auth.js";
 import { initSentry } from "./config/sentry.js";
 
 const app = express();
+const allowedOrigin = process.env.FRONTEND_URL || 'http://localhost:5173';
+const corsOptions = {
+  origin: allowedOrigin,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
 
 initSentry(app);
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 app.use((req, _res, next) => {
   Sentry.addBreadcrumb({
