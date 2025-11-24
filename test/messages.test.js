@@ -35,15 +35,16 @@ describe("API Tests - Message & Conversation Routes", () => {
     user3 = await User.create({ name: "UserThree", email: "user3@test.com", password: "password123" });
 
     const res1 = await request(app).post("/api/auth/login").send({ email: "user1@test.com", password: "password123" });
-    authToken1 = res1.body.token;
+    authToken1 = res1.body.accessToken;
     const res2 = await request(app).post("/api/auth/login").send({ email: "user2@test.com", password: "password123" });
-    authToken2 = res2.body.token;
+    authToken2 = res2.body.accessToken;
     const res3 = await request(app).post("/api/auth/login").send({ email: "user3@test.com", password: "password123" });
-    authToken3 = res3.body.token;
+    authToken3 = res3.body.accessToken;
 
     
     conv1to2 = await Conversation.create({
       participants: [user1._id, user2._id],
+      creator: user1._id,
       unreadCounts: [{ user: user1._id, count: 0 }, { user: user2._id, count: 0 }]
     });
     messageInConv = await Message.create({ sender: user1._id, conversation: conv1to2._id, content: "Hello" });
@@ -233,6 +234,7 @@ describe("API Tests - Message & Conversation Routes", () => {
       groupConv = await Conversation.create({
         name: "Group To Leave",
         participants: [user1._id, user2._id, user3._id],
+        creator: user1._id,
       });
     });
 
@@ -259,7 +261,7 @@ describe("API Tests - Message & Conversation Routes", () => {
     });
 
     it("should delete the conversation if the last participant leaves", async () => {
-      const singlePersonConv = await Conversation.create({ participants: [user1._id] });
+      const singlePersonConv = await Conversation.create({ participants: [user1._id], creator: user1._id });
 
       const res = await request(app)
         .delete(`/api/messages/conversations/${singlePersonConv._id}/leave`)

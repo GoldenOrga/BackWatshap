@@ -18,7 +18,7 @@ describe('API Tests - User Routes (Full Coverage)', () => {
       .post('/api/auth/login')
       .send({ email: 'user1@test.com', password: 'password123' });
     
-    authToken = res.body.token;
+    authToken = res.body.accessToken;
   });
 
   

@@ -26,7 +26,7 @@ describe("Socket.IO Handler Tests", () => {
     aliceToken = jwt.sign({ id: alice._id }, process.env.JWT_SECRET);
     bobToken = jwt.sign({ id: bob._id }, process.env.JWT_SECRET);
 
-    conversation = await Conversation.create({ participants: [alice._id, bob._id] });
+    conversation = await Conversation.create({ participants: [alice._id, bob._id], creator: alice._id });
   });
 
   after(() => {

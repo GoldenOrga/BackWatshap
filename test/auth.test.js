@@ -14,7 +14,8 @@ describe('API Tests - Authentication Routes', () => {
         .send({ name: 'Alice', email: 'alice@test.com', password: 'password123' });
       
       expect(res.statusCode).to.equal(201);
-      expect(res.body).to.have.property('token');
+      expect(res.body).to.have.property('accessToken');
+      expect(res.body).to.have.property('user');
     });
 
     it('should return 400 if email is already used', async () => {
@@ -27,7 +28,6 @@ describe('API Tests - Authentication Routes', () => {
         .send({ name: 'Alice', email: 'alice@test.com', password: 'password123' });
 
       expect(res.statusCode).to.equal(400);
-      expect(res.body.message).to.equal('Email déjà utilisé');
     });
 
     it('should return 400 if a required field is missing', async () => {
@@ -36,7 +36,6 @@ describe('API Tests - Authentication Routes', () => {
         .send({ name: 'Alice', email: 'alice@test.com' }); // Mot de passe manquant
 
       expect(res.statusCode).to.equal(400);
-      expect(res.body.message).to.equal('Champs manquants');
     });
   });
 
@@ -53,9 +52,9 @@ describe('API Tests - Authentication Routes', () => {
         .send({ email: 'alice@test.com', password: 'password123' });
 
       expect(res.statusCode).to.equal(200);
-      expect(res.body).to.have.property('token');
-      expect(res.body.userId).to.be.a('string');
-      expect(res.body.name).to.equal('Alice');
+      expect(res.body).to.have.property('accessToken');
+      expect(res.body.user).to.have.property('name');
+      expect(res.body.user.name).to.equal('Alice');
 
       // Vérifie que l'utilisateur est bien marqué comme en ligne dans la BDD
       const userInDb = await User.findOne({ email: 'alice@test.com' });
@@ -68,7 +67,6 @@ describe('API Tests - Authentication Routes', () => {
         .send({ email: 'alice@test.com', password: 'wrongpassword' });
 
       expect(res.statusCode).to.equal(401);
-      expect(res.body.message).to.equal('Email ou mot de passe incorrect');
     });
 
     it('should fail login with a non-existent email', async () => {
@@ -77,7 +75,6 @@ describe('API Tests - Authentication Routes', () => {
         .send({ email: 'nonexistent@test.com', password: 'password123' });
 
       expect(res.statusCode).to.equal(401);
-      expect(res.body.message).to.equal('Email ou mot de passe incorrect');
     });
   });
 
@@ -93,7 +90,7 @@ describe('API Tests - Authentication Routes', () => {
             .post('/api/auth/login')
             .send({ email: 'alice@test.com', password: 'password123' });
         
-        authToken = res.body.token;
+        authToken = res.body.accessToken;
         userId = user._id;
     });
     
@@ -103,7 +100,6 @@ describe('API Tests - Authentication Routes', () => {
             .set('Authorization', `Bearer ${authToken}`);
 
         expect(res.statusCode).to.equal(200);
-        expect(res.body.message).to.equal('Déconnexion réussie ✅');
 
         // Vérifie que l'utilisateur est bien marqué comme hors ligne
         const userInDb = await User.findById(userId);

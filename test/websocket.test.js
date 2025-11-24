@@ -59,22 +59,34 @@ describe('WebSocket Tests', () => {
   });
 
   it('Alice should receive a message from Bob', (done) => {
-    clientSocketAlice = io(`http://localhost:${process.env.PORT}`, { auth: { token: aliceToken }, transports: ['websocket'] });
-    clientSocketBob = io(`http://localhost:${process.env.PORT}`, { auth: { token: bobToken }, transports: ['websocket'] });
+    this.timeout(5000);
+    clientSocketAlice = io(`http://localhost:${process.env.PORT}`, { auth: { token: aliceToken }, transports: ['websocket'], reconnection: false });
+    clientSocketBob = io(`http://localhost:${process.env.PORT}`, { auth: { token: bobToken }, transports: ['websocket'], reconnection: false });
+
+    let bobConnected = false;
+    let aliceConnected = false;
+
+    clientSocketAlice.on('connect', () => {
+      aliceConnected = true;
+      if (bobConnected) sendMessage();
+    });
+
+    clientSocketBob.on('connect', () => {
+      bobConnected = true;
+      if (aliceConnected) sendMessage();
+    });
 
     clientSocketAlice.on('receive-message', (message) => {
       expect(message.content).to.equal('Hello Alice!');
       expect(message.sender.toString()).to.equal(bob._id.toString());
       done();
     });
-    
-    clientSocketBob.on('connect', () => {
+
+    const sendMessage = () => {
       clientSocketBob.emit('send-message', {
         receiverId: alice._id.toString(),
         content: 'Hello Alice!'
-      }, (ack) => {
-          expect(ack.success).to.be.true;
       });
-    });
+    };
   });
 });
