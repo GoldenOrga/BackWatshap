@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chat App</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="/socket.io/socket.io.js" defer></script>
+    <script src="script.js" defer></script>
+  </head>
+  <body>
+
+    <div id="auth-container">
+      <div id="auth-box">
+        <div id="login-view">
+          <h2>Connexion</h2>
+          <form id="login-form"> 
+            <input type="email" id="login-email" placeholder="Email" required autocomplete="email" />
+            <input type="password" id="login-password" placeholder="Mot de passe" required autocomplete="current-password" />
+            <button type="submit">Se connecter</button>
+          </form>
+          <p>Pas de compte ? <a href="#" id="show-register">S'inscrire</a></p>
+        </div>
+        <div id="register-view" class="hidden">
+          <h2>Inscription</h2>
+          <form id="register-form">
+            <input type="text" id="register-name" placeholder="Nom" required autocomplete="name" />
+            <input type="email" id="register-email" placeholder="Email" required autocomplete="email" />
+            <input type="password" id="register-password" placeholder="Mot de passe" required autocomplete="new-password" />
+            <!-- AJOUTÉ : Champ pour l'URL de l'avatar (optionnel) -->
+            <input type="url" id="register-avatar" placeholder="URL de l'avatar (optionnel)" autocomplete="photo" />
+            <button type="submit">S'inscrire</button>
+          </form>
+          <p>Déjà un compte ? <a href="#" id="show-login">Se connecter</a></p>
+        </div>
+        <p id="auth-error" class="error-message"></p>
+      </div>
+    </div>
+
+    <div id="chat-container" class="hidden">
+      <aside id="sidebar">
+        <div id="sidebar-header">
+
+          <div id="current-user-profile" title="Modifier mon profil">
+            <img id="current-user-avatar" src="" alt="Mon profil" class="avatar"/>
+            <span id="current-user-name"></span>
+          </div>
+          <div>
+            <button id="new-group-btn" title="Nouvelle conversation">+</button>
+            <button id="logout-btn">Déconnexion</button>
+          </div>
+        </div>
+        <ul id="users-list"></ul>
+      </aside>
+      <main id="chat-window">
+        <div id="welcome-screen">
+          <h2>Bienvenue !</h2>
+          <p>Sélectionnez une conversation pour commencer à chatter.</p>
+        </div>
+        <div id="chat-view" class="hidden">
+          <header id="chat-header">
+            <div class="chat-header-main">
+
+              <div class="chat-header-profile">
+                <img id="chat-with-avatar" class="avatar" src="" alt="">
+                <div>
+                  <h2 id="chat-with-name"></h2>
+                  <div id="chat-with-status-container">
+                    <span id="user-status-text"></span>
+                    <em id="typing-indicator" class="hidden"></em>
+                  </div>
+                </div>
+              </div>
+              <button id="leave-conversation-btn" class="hidden" title="Quitter la conversation">Quitter</button>
+            </div>
+          </header>
+          <div id="messages-list"></div>
+          <form id="message-form">
+            <input id="message-input" type="text" placeholder="Écrivez un message..." autocomplete="off" />
+            <button type="submit">Envoyer</button>
+          </form>
+        </div>
+      </main>
+    </div>
+    <div id="new-group-modal" class="modal-overlay hidden">
+      <div class="modal-content">
+        <h2>Nouvelle Conversation</h2>
+        <input type="text" id="group-name-input" placeholder="Nom du groupe (optionnel)" />
+        <div id="modal-users-list"></div>
+        <div class="modal-actions">
+          <button id="create-group-submit-btn">Créer</button>
+          <button id="cancel-group-btn">Annuler</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="profile-modal" class="modal-overlay hidden">
+      <div class="modal-content">
+        <h2>Modifier mon profil</h2>
+        <input type="text" id="profile-name-input" placeholder="Nouveau nom" />
+        <input type="url" id="profile-avatar-input" placeholder="Nouvelle URL d'avatar" />
+        <div class="modal-actions">
+          <button id="save-profile-btn">Enregistrer</button>
+          <button id="cancel-profile-btn">Annuler</button>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
