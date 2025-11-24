@@ -2,9 +2,9 @@ import jwt from "jsonwebtoken";
 import * as Sentry from "@sentry/node";
 
 const auth = (req, res, next) => {
-  // 🔥 Bypass total du middleware en test
+  // 🔥 Bypass en test pour les tests unitaires
   if (process.env.NODE_ENV === "test") {
-    req.user = { id: "test-user" };
+    req.user = { id: req.headers["x-user-id"] || "test-user" }; // facultatif : override si besoin
     return next();
   }
 
@@ -19,10 +19,7 @@ const auth = (req, res, next) => {
   try {
     const verified = jwt.verify(token, process.env.JWT_SECRET);
     req.user = { id: verified.id };
-    Sentry.setUser({
-      id: verified.id?.toString(),
-    });
-
+    Sentry.setUser({ id: verified.id?.toString() });
     next();
   } catch (err) {
     Sentry.setUser(null);
