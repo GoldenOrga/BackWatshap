@@ -1,4 +1,5 @@
 import * as Sentry from "@sentry/node";
+import { nodeProfilingIntegration } from "@sentry/profiling-node";
 import "dotenv/config";
 
 export function initSentry(app) {
@@ -8,8 +9,12 @@ export function initSentry(app) {
     sendDefaultPii: true,
 
     tracesSampleRate: 1.0,
+
+    profilesSampleRate: 1.0,
+
     integrations: [
       Sentry.expressIntegration({ app }),
+      nodeProfilingIntegration(),
     ],
   });
 }
