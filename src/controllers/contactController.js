@@ -3,10 +3,17 @@ import Contact from '../models/Contact.js';
 import User from '../models/User.js';
 import logger from '../config/logger.js';
 
+// Helper : détecte un ObjectId invalide
+const invalidId = (id) => !/^[0-9a-fA-F]{24}$/.test(id);
+
 export const addContact = async (req, res) => {
   try {
     const userId = req.user.id;
     const { contactId } = req.body;
+
+    if (invalidId(contactId)) {
+      return res.status(400).json({ message: 'ID invalide' });
+    }
 
     if (userId === contactId) {
       return res.status(400).json({ message: 'Vous ne pouvez pas vous ajouter comme contact' });
@@ -58,6 +65,10 @@ export const removeContact = async (req, res) => {
     const userId = req.user.id;
     const { contactId } = req.params;
 
+    if (invalidId(contactId)) {
+      return res.status(400).json({ message: 'ID invalide' });
+    }
+
     const contact = await Contact.findOne({ user: userId, contact: contactId });
     if (!contact) {
       return res.status(404).json({ message: 'Contact non trouvé' });
@@ -77,11 +88,15 @@ export const blockContact = async (req, res) => {
     const userId = req.user.id;
     const { contactId } = req.params;
 
+    if (invalidId(contactId)) {
+      return res.status(400).json({ message: 'ID invalide' });
+    }
+
     let contact = await Contact.findOne({ user: userId, contact: contactId });
-    
+
     if (!contact) {
-      contact = await Contact.create({ 
-        user: userId, 
+      contact = await Contact.create({
+        user: userId,
         contact: contactId,
         status: 'blocked',
         isBlocked: true,
@@ -109,7 +124,12 @@ export const unblockContact = async (req, res) => {
     const userId = req.user.id;
     const { contactId } = req.params;
 
+    if (invalidId(contactId)) {
+      return res.status(400).json({ message: 'ID invalide' });
+    }
+
     const contact = await Contact.findOne({ user: userId, contact: contactId });
+
     if (!contact || !contact.isBlocked) {
       return res.status(404).json({ message: 'Contact bloqué non trouvé' });
     }

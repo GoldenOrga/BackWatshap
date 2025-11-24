@@ -17,8 +17,14 @@ router.post('/', auth, addContact);
 router.get('/', auth, getContacts);
 router.get('/blocked', auth, getBlockedContacts);
 router.get('/search', auth, searchContacts);
-router.delete('/:contactId', auth, removeContact);
+
+// 🔥 Support des deux syntaxes
 router.post('/:contactId/block', auth, blockContact);
+router.post('/block/:contactId', auth, blockContact);
+
 router.post('/:contactId/unblock', auth, unblockContact);
+router.post('/unblock/:contactId', auth, unblockContact);
+
+router.delete('/:contactId', auth, removeContact);
 
 export default router;
