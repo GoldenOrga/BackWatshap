@@ -9,11 +9,25 @@ import sessionRoutes from './routes/sessions.js';
 import mediaRoutes from './routes/media.js';
 import groupRoutes from './routes/groups.js';
 import { initSentry } from './config/sentry.js';
+import auth from "./middleware/auth.js";
 
 const app = express();
 
-// Initialiser Sentry s'il est configuré
 initSentry(app);
+
+app.use((req, _res, next) => {
+  Sentry.addBreadcrumb({
+    category: "request",
+    type: "http",
+    level: "info",
+    message: `${req.method} ${req.originalUrl}`,
+    data: {
+      query: req.query,
+    },
+  });
+
+  next();
+});
 
 app.use(express.json());
 app.use(express.static('public'));
@@ -25,6 +39,10 @@ app.use('/api/contacts', contactRoutes);
 app.use('/api/sessions', sessionRoutes);
 app.use('/api/media', mediaRoutes);
 app.use('/api/groups', groupRoutes);
+
+app.get("/debug-sentry-auth", auth, function mainHandler(req, res) {
+  throw new Error("My first Sentry error!");
+});
 
 app.get("/debug-sentry", function mainHandler(req, res) {
   throw new Error("My first Sentry error!");
