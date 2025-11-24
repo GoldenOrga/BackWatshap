@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Chat App</title>
-    <link rel="stylesheet" href="style.css" />
+    <title>WatChat - Messaging App</title>
+    <link rel="stylesheet" href="style_v2.css" />
     <script src="/socket.io/socket.io.js" defer></script>
-    <script src="script.js" defer></script>
+    <script src="script_v2.js" defer></script>
   </head>
   <body>
 
@@ -45,9 +45,11 @@
             <img id="current-user-avatar" src="" alt="Mon profil" class="avatar"/>
             <span id="current-user-name"></span>
           </div>
-          <div>
+          <div class="sidebar-buttons">
+            <button id="contacts-btn" title="Mes contacts">👥</button>
+            <button id="sessions-btn" title="Mes sessions">📱</button>
             <button id="new-group-btn" title="Nouvelle conversation">+</button>
-            <button id="logout-btn">Déconnexion</button>
+            <button id="logout-btn">🚪</button>
           </div>
         </div>
         <ul id="users-list"></ul>
@@ -102,6 +104,34 @@
         <div class="modal-actions">
           <button id="save-profile-btn">Enregistrer</button>
           <button id="cancel-profile-btn">Annuler</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="sessions-modal" class="modal-overlay hidden">
+      <div class="modal-content">
+        <h2>Mes sessions actives</h2>
+        <div id="sessions-list"></div>
+        <div class="modal-actions">
+          <button id="terminate-all-sessions-btn">Fermer toutes les sessions</button>
+          <button id="close-sessions-modal-btn">Fermer</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="contacts-modal" class="modal-overlay hidden">
+      <div class="modal-content">
+        <h2>Mes contacts</h2>
+        <div class="search-box">
+          <input type="text" id="contact-search-input" placeholder="Chercher un contact..." />
+        </div>
+        <div id="contacts-list"></div>
+        <div id="blocked-contacts-container">
+          <h3>Contacts bloqués</h3>
+          <div id="blocked-contacts-list"></div>
+        </div>
+        <div class="modal-actions">
+          <button id="close-contacts-modal-btn">Fermer</button>
         </div>
       </div>
     </div>

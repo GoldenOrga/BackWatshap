@@ -26,6 +26,8 @@ export const createOrGetConversation = async (req, res) => {
         const newConversation = await Conversation.create({
             name: name,
             participants: allParticipants,
+            creator: req.user.id,
+            isGroup: allParticipants.length > 2,
             unreadCounts
         });
 

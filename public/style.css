@@ -556,3 +556,218 @@ body {
   display: flex;
   flex-direction: column-reverse;
 }
+
+.sidebar-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.sidebar-buttons button {
+  background: #e4e6eb;
+  border: none;
+  padding: 0.6rem 0.8rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1.1rem;
+  transition: background 0.2s;
+}
+
+.sidebar-buttons button:hover {
+  background: #d0d2d7;
+}
+
+.sidebar-buttons #logout-btn {
+  background: #fa383e;
+  color: white;
+}
+
+.sidebar-buttons #logout-btn:hover {
+  background: #d42d31;
+}
+
+#sessions-list {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+}
+
+.session-item {
+  padding: 1rem;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.session-item:last-child {
+  border-bottom: none;
+}
+
+.session-info {
+  flex-grow: 1;
+}
+
+.session-device {
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.session-meta {
+  font-size: 0.85rem;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.session-last-activity {
+  font-size: 0.8rem;
+  color: #999;
+}
+
+.session-close-btn {
+  background: #fa383e;
+  color: white;
+  border: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.session-close-btn:hover {
+  background: #d42d31;
+}
+
+#contacts-list {
+  max-height: 400px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+}
+
+.contact-item {
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.contact-item:last-child {
+  border-bottom: none;
+}
+
+.contact-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-grow: 1;
+}
+
+.contact-info .avatar {
+  width: 35px;
+  height: 35px;
+}
+
+.contact-name {
+  font-weight: 500;
+}
+
+.contact-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.contact-actions button {
+  background: #e4e6eb;
+  border: none;
+  padding: 0.4rem 0.6rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.contact-actions button:hover {
+  background: #d0d2d7;
+}
+
+.contact-actions .block-btn {
+  background: #fa383e;
+  color: white;
+}
+
+.contact-actions .block-btn:hover {
+  background: #d42d31;
+}
+
+#blocked-contacts-list {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+}
+
+.blocked-contact-item {
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.blocked-contact-item:last-child {
+  border-bottom: none;
+}
+
+.blocked-contact-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.blocked-contact-info .avatar {
+  width: 30px;
+  height: 30px;
+}
+
+.unblock-btn {
+  background: #0084ff;
+  color: white;
+  border: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.unblock-btn:hover {
+  background: #0073e6;
+}
+
+.search-box {
+  margin-bottom: 1rem;
+}
+
+.search-box input {
+  width: 100%;
+  padding: 0.8rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+
+.add-contact-btn {
+  background: #0084ff;
+  color: white;
+  border: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.add-contact-btn:hover {
+  background: #0073e6;
+}

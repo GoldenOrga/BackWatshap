@@ -39,7 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const profileNameInput = document.getElementById("profile-name-input");
   const profileAvatarInput = document.getElementById("profile-avatar-input");
 
-  let token = localStorage.getItem("token");
+  let token = localStorage.getItem("accessToken");
   let currentUser = JSON.parse(localStorage.getItem("user"));
   let socket;
   let currentConversation = null;
@@ -79,10 +79,18 @@ document.addEventListener("DOMContentLoaded", () => {
         email: document.getElementById("login-email").value,
         password: document.getElementById("login-password").value,
       });
-      token = data.token;
+      token = data.accessToken;
+      const refreshToken = data.refreshToken;
 
-      currentUser = { id: data.userId, name: data.name, avatar: data.avatar };
-      localStorage.setItem("token", token);
+      currentUser = { 
+        id: data.user.id, 
+        name: data.user.name, 
+        email: data.user.email,
+        avatar: data.user.avatar,
+        isOnline: data.user.isOnline
+      };
+      localStorage.setItem("accessToken", token);
+      localStorage.setItem("refreshToken", refreshToken);
       localStorage.setItem("user", JSON.stringify(currentUser));
       showChatView();
     } catch (error) {}
@@ -102,16 +110,28 @@ document.addEventListener("DOMContentLoaded", () => {
         registrationData.avatar = avatar;
       }
 
-      await apiCall("/auth/register", "POST", registrationData);
-
-      document.getElementById("login-email").value = email;
-      document.getElementById("login-password").value = password;
-      await handleLogin(e);
+      const data = await apiCall("/auth/register", "POST", registrationData);
+      
+      // Auto-login après inscription
+      token = data.accessToken;
+      const refreshToken = data.refreshToken;
+      currentUser = { 
+        id: data.user.id, 
+        name: data.user.name, 
+        email: data.user.email,
+        avatar: data.user.avatar,
+        isOnline: data.user.isOnline
+      };
+      localStorage.setItem("accessToken", token);
+      localStorage.setItem("refreshToken", refreshToken);
+      localStorage.setItem("user", JSON.stringify(currentUser));
+      showChatView();
     } catch (error) {}
   };
 
   const handleLogout = async () => {
     try {
+      await apiCall("/auth/logout", "POST");
     } finally {
       localStorage.clear();
       if (socket) socket.disconnect();
@@ -556,6 +576,206 @@ document.addEventListener("DOMContentLoaded", () => {
     socket.on("disconnect", () => console.log("Socket déconnecté."));
   };
 
+  const openSessionsModal = async () => {
+    try {
+      const sessions = await apiCall("/sessions");
+      const sessionsList = document.getElementById("sessions-list");
+      sessionsList.innerHTML = "";
+      
+      if (sessions.length === 0) {
+        sessionsList.innerHTML = "<p style='padding: 1rem; color: #999;'>Aucune session active</p>";
+        return;
+      }
+
+      sessions.forEach((session) => {
+        const div = document.createElement("div");
+        div.className = "session-item";
+        const lastActivity = new Date(session.lastActivity).toLocaleString('fr-FR');
+        const createdAt = new Date(session.createdAt).toLocaleString('fr-FR');
+        
+        div.innerHTML = `
+          <div class="session-info">
+            <div class="session-device">📱 ${session.deviceName}</div>
+            <div class="session-meta">IP: ${session.ipAddress || 'N/A'}</div>
+            <div class="session-last-activity">Créée: ${createdAt}</div>
+            <div class="session-last-activity">Dernière activité: ${lastActivity}</div>
+          </div>
+          <button class="session-close-btn" onclick="closeSession('${session._id}')">Fermer</button>
+        `;
+        sessionsList.appendChild(div);
+      });
+    } catch (error) {
+      console.error("Erreur lors de la récupération des sessions:", error);
+    }
+  };
+
+  window.closeSession = async (sessionId) => {
+    try {
+      await apiCall(`/sessions/${sessionId}`, "DELETE");
+      openSessionsModal(); // Rafraîchir la liste
+    } catch (error) {
+      console.error("Erreur lors de la fermeture de la session:", error);
+    }
+  };
+
+  const openContactsModal = async () => {
+    try {
+      // Afficher les contacts existants
+      const contacts = await apiCall("/contacts");
+      const contactsList = document.getElementById("contacts-list");
+      contactsList.innerHTML = "";
+      
+      if (contacts.length === 0) {
+        contactsList.innerHTML = "<p style='padding: 1rem; color: #999;'>Aucun contact. Ajouter des utilisateurs ci-dessous.</p>";
+      } else {
+        contacts.forEach((contact) => {
+          // Vérifier que contact.contact existe et n'est pas null
+          if (!contact.contact) {
+            console.warn("Contact invalide:", contact);
+            return;
+          }
+          
+          const div = document.createElement("div");
+          div.className = "contact-item";
+          const contactUser = contact.contact;
+          
+          div.innerHTML = `
+            <div class="contact-info">
+              <img src="${contactUser.avatar || 'https://api.dicebear.com/6.x/initials/svg?seed=default'}" alt="${contactUser.name}" class="avatar" />
+              <span class="contact-name">${contactUser.name}</span>
+            </div>
+            <div class="contact-actions">
+              <button class="block-btn" onclick="blockContact('${contact._id}')">Bloquer</button>
+            </div>
+          `;
+          contactsList.appendChild(div);
+        });
+      }
+
+      // Afficher les utilisateurs disponibles pour ajouter comme contact
+      const users = await apiCall("/users?limit=100");
+      const usersList = users.users || users;
+      
+      // Récupérer les IDs des contacts existants (avec vérification)
+      const existingContactIds = new Set(
+        contacts
+          .filter(c => c.contact) // Filtrer les contacts valides
+          .map(c => c.contact._id || c.contact)
+      );
+      
+      // Créer une liste d'utilisateurs non contactés
+      const availableUsers = usersList.filter(user => 
+        user._id !== currentUser.id && !existingContactIds.has(user._id)
+      );
+      
+      // Ajouter une section pour ajouter des contacts
+      if (availableUsers.length > 0) {
+        const addContactDiv = document.createElement("div");
+        addContactDiv.style.marginTop = "1rem";
+        addContactDiv.style.borderTop = "1px solid #ddd";
+        addContactDiv.style.paddingTop = "1rem";
+        addContactDiv.id = "add-contacts-section";
+        
+        const title = document.createElement("h3");
+        title.textContent = "Ajouter des contacts";
+        title.style.marginBottom = "0.5rem";
+        addContactDiv.appendChild(title);
+        
+        const usersDiv = document.createElement("div");
+        usersDiv.style.maxHeight = "200px";
+        usersDiv.style.overflowY = "auto";
+        
+        availableUsers.forEach((user) => {
+          const userItem = document.createElement("div");
+          userItem.className = "contact-item";
+          userItem.style.borderBottom = "1px solid #eee";
+          
+          userItem.innerHTML = `
+            <div class="contact-info">
+              <img src="${user.avatar || 'https://api.dicebear.com/6.x/initials/svg?seed=default'}" alt="${user.name}" class="avatar" />
+              <span class="contact-name">${user.name}</span>
+            </div>
+            <button class="add-contact-btn" onclick="addNewContact('${user._id}')">➕ Ajouter</button>
+          `;
+          usersDiv.appendChild(userItem);
+        });
+        
+        addContactDiv.appendChild(usersDiv);
+        
+        // Supprimer l'ancienne section si elle existe
+        const oldSection = document.getElementById("add-contacts-section");
+        if (oldSection) {
+          oldSection.remove();
+        }
+        
+        contactsList.parentElement.appendChild(addContactDiv);
+      }
+
+      // Afficher les contacts bloqués
+      const blockedContacts = await apiCall("/contacts/blocked");
+      const blockedList = document.getElementById("blocked-contacts-list");
+      blockedList.innerHTML = "";
+      
+      if (blockedContacts.length === 0) {
+        blockedList.innerHTML = "<p style='padding: 1rem; color: #999;'>Aucun contact bloqué</p>";
+      } else {
+        blockedContacts.forEach((contact) => {
+          // Vérifier que contact.contact existe
+          if (!contact.contact) {
+            console.warn("Contact bloqué invalide:", contact);
+            return;
+          }
+          
+          const div = document.createElement("div");
+          div.className = "blocked-contact-item";
+          const contactUser = contact.contact;
+          
+          div.innerHTML = `
+            <div class="blocked-contact-info">
+              <img src="${contactUser.avatar || 'https://api.dicebear.com/6.x/initials/svg?seed=default'}" alt="${contactUser.name}" class="avatar" />
+              <span>${contactUser.name}</span>
+            </div>
+            <button class="unblock-btn" onclick="unblockContact('${contact._id}')">Débloquer</button>
+          `;
+          blockedList.appendChild(div);
+        });
+      }
+    } catch (error) {
+      console.error("Erreur lors de la récupération des contacts:", error);
+      document.getElementById("contacts-list").innerHTML = "<p style='color: red;'>Erreur: " + error.message + "</p>";
+    }
+  };
+
+  window.blockContact = async (contactId) => {
+    try {
+      await apiCall(`/contacts/${contactId}/block`, "POST");
+      openContactsModal(); // Rafraîchir la liste
+    } catch (error) {
+      console.error("Erreur lors du blocage du contact:", error);
+      alert("Erreur: " + error.message);
+    }
+  };
+
+  window.unblockContact = async (contactId) => {
+    try {
+      await apiCall(`/contacts/${contactId}/unblock`, "POST");
+      openContactsModal(); // Rafraîchir la liste
+    } catch (error) {
+      console.error("Erreur lors du déblocage du contact:", error);
+      alert("Erreur: " + error.message);
+    }
+  };
+
+  window.addNewContact = async (userId) => {
+    try {
+      await apiCall("/contacts", "POST", { contactId: userId });
+      openContactsModal(); // Rafraîchir la liste
+    } catch (error) {
+      console.error("Erreur lors de l'ajout du contact:", error);
+      alert("Erreur: " + error.message);
+    }
+  };
+
   const init = () => {
     if (token && currentUser) {
       showChatView();
@@ -590,6 +810,54 @@ document.addEventListener("DOMContentLoaded", () => {
       profileModal.classList.add("hidden")
     );
     saveProfileBtn.addEventListener("click", handleProfileUpdate);
+
+    // Événements pour les sessions et contacts
+    const sessionsBtn = document.getElementById("sessions-btn");
+    const contactsBtn = document.getElementById("contacts-btn");
+    const sessionsModal = document.getElementById("sessions-modal");
+    const contactsModal = document.getElementById("contacts-modal");
+    const terminateAllBtn = document.getElementById("terminate-all-sessions-btn");
+    const closeSessionsBtn = document.getElementById("close-sessions-modal-btn");
+    const closeContactsBtn = document.getElementById("close-contacts-modal-btn");
+
+    if (sessionsBtn) {
+      sessionsBtn.addEventListener("click", () => {
+        openSessionsModal();
+        sessionsModal.classList.remove("hidden");
+      });
+    }
+
+    if (contactsBtn) {
+      contactsBtn.addEventListener("click", () => {
+        openContactsModal();
+        contactsModal.classList.remove("hidden");
+      });
+    }
+
+    if (terminateAllBtn) {
+      terminateAllBtn.addEventListener("click", async () => {
+        if (confirm("Êtes-vous sûr de vouloir fermer toutes les sessions ?")) {
+          try {
+            await apiCall("/sessions/terminate-all", "POST");
+            openSessionsModal();
+          } catch (error) {
+            console.error("Erreur:", error);
+          }
+        }
+      });
+    }
+
+    if (closeSessionsBtn) {
+      closeSessionsBtn.addEventListener("click", () =>
+        sessionsModal.classList.add("hidden")
+      );
+    }
+
+    if (closeContactsBtn) {
+      closeContactsBtn.addEventListener("click", () =>
+        contactsModal.classList.add("hidden")
+      );
+    }
   };
 
   init();

@@ -1,0 +1,533 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                         WATCHER API REFERENCE v1.0                            ║
+║                    Tous les Endpoints & URL de l'Application                 ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+═══════════════════════════════════════════════════════════════════════════════
+🌐 URLS PRINCIPALES
+═══════════════════════════════════════════════════════════════════════════════
+
+Application Web:     http://localhost:5000
+WebSocket (Socket): ws://localhost:5000 (automatique via /socket.io/)
+API Base:            http://localhost:5000/api
+
+═══════════════════════════════════════════════════════════════════════════════
+🔐 AUTHENTICATION ENDPOINTS (/api/auth)
+═══════════════════════════════════════════════════════════════════════════════
+
+┌─ POST /api/auth/register
+│  Description: Créer un nouveau compte utilisateur
+│  Auth Required: ❌ Non
+│  Body:
+│  {
+│    "name": "Alice",
+│    "email": "alice@test.com",
+│    "password": "SecurePassword123!",
+│    "avatar": "https://example.com/avatar.jpg" (optionnel)
+│  }
+│  Response:
+│  {
+│    "accessToken": "eyJhbGc...",
+│    "refreshToken": "eyJhbGc...",
+│    "user": {
+│      "id": "507f1f77bcf86cd799439011",
+│      "name": "Alice",
+│      "email": "alice@test.com",
+│      "avatar": "...",
+│      "isOnline": true
+│    }
+│  }
+│  Status: 201 Created
+└─
+
+┌─ POST /api/auth/login
+│  Description: Se connecter avec email et mot de passe
+│  Auth Required: ❌ Non
+│  Body:
+│  {
+│    "email": "alice@test.com",
+│    "password": "SecurePassword123!"
+│  }
+│  Response:
+│  {
+│    "accessToken": "eyJhbGc...",
+│    "refreshToken": "eyJhbGc...",
+│    "user": { ... }
+│  }
+│  Status: 200 OK
+└─
+
+┌─ POST /api/auth/refresh-token
+│  Description: Rafraîchir le access token
+│  Auth Required: ✅ Oui (Bearer token)
+│  Body:
+│  {
+│    "refreshToken": "eyJhbGc..."
+│  }
+│  Response:
+│  {
+│    "accessToken": "eyJhbGc..."
+│  }
+│  Status: 200 OK
+└─
+
+┌─ POST /api/auth/logout
+│  Description: Se déconnecter
+│  Auth Required: ✅ Oui (Bearer token)
+│  Body: {}
+│  Response: { "message": "Déconnexion réussie" }
+│  Status: 200 OK
+└─
+
+═══════════════════════════════════════════════════════════════════════════════
+👤 USERS ENDPOINTS (/api/users)
+═══════════════════════════════════════════════════════════════════════════════
+
+┌─ GET /api/users
+│  Description: Lister tous les utilisateurs
+│  Auth Required: ✅ Oui
+│  Query Params: aucun
+│  Response: [{ id, name, email, avatar, isOnline, lastLogout }, ...]
+│  Status: 200 OK
+└─
+
+┌─ GET /api/users/profile
+│  Description: Obtenir mon profil utilisateur
+│  Auth Required: ✅ Oui
+│  Response: { id, name, email, avatar, isOnline, lastLogout, createdAt }
+│  Status: 200 OK
+└─
+
+┌─ PUT /api/users/profile
+│  Description: Mettre à jour mon profil
+│  Auth Required: ✅ Oui
+│  Body:
+│  {
+│    "name": "Alice Wonderland",
+│    "avatar": "https://example.com/new-avatar.jpg"
+│  }
+│  Response: { id, name, email, avatar, ... }
+│  Status: 200 OK
+└─
+
+┌─ GET /api/users/search?q=alice
+│  Description: Chercher un utilisateur par nom
+│  Auth Required: ✅ Oui
+│  Query Params: q (string) - terme de recherche
+│  Response: [{ id, name, email, avatar, isOnline }, ...]
+│  Status: 200 OK
+└─
+
+═══════════════════════════════════════════════════════════════════════════════
+📞 CONTACTS ENDPOINTS (/api/contacts)
+═══════════════════════════════════════════════════════════════════════════════
+
+┌─ GET /api/contacts
+│  Description: Lister tous mes contacts
+│  Auth Required: ✅ Oui
+│  Response: [{ id, user, contact, status, createdAt }, ...]
+│  Status: 200 OK
+└─
+
+┌─ GET /api/contacts/blocked
+│  Description: Lister mes contacts bloqués
+│  Auth Required: ✅ Oui
+│  Response: [{ id, user, contact, blockedAt }, ...]
+│  Status: 200 OK
+└─
+
+┌─ POST /api/contacts
+│  Description: Ajouter un contact
+│  Auth Required: ✅ Oui
+│  Body:
+│  {
+│    "contactId": "507f1f77bcf86cd799439012"
+│  }
+│  Response: { id, user, contact, status: "pending", createdAt }
+│  Status: 201 Created
+└─
+
+┌─ DELETE /api/contacts/:contactId
+│  Description: Supprimer un contact
+│  Auth Required: ✅ Oui
+│  Params: contactId (ObjectId)
+│  Response: { message: "Contact supprimé" }
+│  Status: 200 OK
+└─
+
+┌─ PUT /api/contacts/:contactId/block
+│  Description: Bloquer un contact
+│  Auth Required: ✅ Oui
+│  Params: contactId (ObjectId)
+│  Body: {}
+│  Response: { id, user, contact, status: "blocked", blockedAt }
+│  Status: 200 OK
+└─
+
+┌─ PUT /api/contacts/:contactId/unblock
+│  Description: Débloquer un contact
+│  Auth Required: ✅ Oui
+│  Params: contactId (ObjectId)
+│  Body: {}
+│  Response: { id, user, contact, status: "accepted" }
+│  Status: 200 OK
+└─
+
+═══════════════════════════════════════════════════════════════════════════════
+💬 MESSAGES & CONVERSATIONS (/api/messages)
+═══════════════════════════════════════════════════════════════════════════════
+
+┌─ GET /api/messages/conversations
+│  Description: Lister toutes mes conversations
+│  Auth Required: ✅ Oui
+│  Response: [{ id, name, participants, lastMessage, unreadCount, ... }, ...]
+│  Status: 200 OK
+└─
+
+┌─ POST /api/messages/conversations
+│  Description: Créer une nouvelle conversation ou groupe
+│  Auth Required: ✅ Oui
+│  Body:
+│  {
+│    "participantIds": ["507f1f77bcf86cd799439012", "507f1f77bcf86cd799439013"],
+│    "name": "Group Chat" (optionnel, pour groupes)
+│  }
+│  Response: { id, name, participants, creator, isGroup, createdAt }
+│  Status: 201 Created
+└─
+
+┌─ GET /api/messages/conversation/:conversationId
+│  Description: Obtenir tous les messages d'une conversation
+│  Auth Required: ✅ Oui
+│  Params: conversationId (ObjectId)
+│  Query: ?limit=50&skip=0 (pagination)
+│  Response: [{ id, sender, content, status, createdAt, ... }, ...]
+│  Status: 200 OK
+└─
+
+┌─ POST /api/messages
+│  Description: Envoyer un message
+│  Auth Required: ✅ Oui
+│  Body:
+│  {
+│    "conversation_id": "507f1f77bcf86cd799439010",
+│    "content": "Bonjour!"
+│  }
+│  Response: { id, sender, conversation, content, status: "sent", createdAt }
+│  Status: 201 Created
+│  WebSocket: Émet "receive-message" à tous les participants
+└─
+
+┌─ PUT /api/messages/:messageId
+│  Description: Éditer un message
+│  Auth Required: ✅ Oui
+│  Params: messageId (ObjectId)
+│  Body:
+│  {
+│    "content": "Bonjour! (modifié)"
+│  }
+│  Response: { id, content, edited: true, editHistory, ... }
+│  Status: 200 OK
+│  WebSocket: Émet "message-updated" aux participants
+└─
+
+┌─ DELETE /api/messages/:messageId
+│  Description: Supprimer un message
+│  Auth Required: ✅ Oui
+│  Params: messageId (ObjectId)
+│  Response: { message: "Message supprimé" }
+│  Status: 200 OK
+└─
+
+┌─ DELETE /api/messages/conversations/:conversationId/leave
+│  Description: Quitter une conversation/groupe
+│  Auth Required: ✅ Oui
+│  Params: conversationId (ObjectId)
+│  Response: { message: "Vous avez quitté la conversation" }
+│  Status: 200 OK
+└─
+
+═══════════════════════════════════════════════════════════════════════════════
+👥 GROUPS ENDPOINTS (/api/groups)
+═══════════════════════════════════════════════════════════════════════════════
+
+┌─ POST /api/groups
+│  Description: Créer un groupe
+│  Auth Required: ✅ Oui
+│  Body:
+│  {
+│    "name": "Dev Team",
+│    "description": "Équipe de développement",
+│    "avatar": "https://...",
+│    "memberIds": ["507f1f77bcf86cd799439012", ...]
+│  }
+│  Response: { id, name, creator, members, conversation, createdAt }
+│  Status: 201 Created
+└─
+
+┌─ GET /api/groups/:groupId
+│  Description: Obtenir les infos d'un groupe
+│  Auth Required: ✅ Oui
+│  Params: groupId (ObjectId)
+│  Response: { id, name, description, creator, members, settings, ... }
+│  Status: 200 OK
+└─
+
+┌─ PUT /api/groups/:groupId
+│  Description: Modifier les infos du groupe
+│  Auth Required: ✅ Oui (admin seulement)
+│  Params: groupId (ObjectId)
+│  Body:
+│  {
+│    "name": "Nouveau nom",
+│    "description": "Nouvelle description",
+│    "avatar": "..."
+│  }
+│  Response: { id, name, description, avatar, modificationHistory }
+│  Status: 200 OK
+└─
+
+┌─ POST /api/groups/:groupId/members
+│  Description: Ajouter un membre au groupe
+│  Auth Required: ✅ Oui (admin seulement)
+│  Params: groupId (ObjectId)
+│  Body:
+│  {
+│    "userId": "507f1f77bcf86cd799439012",
+│    "role": "member" (admin | moderator | member)
+│  }
+│  Response: { id, members }
+│  Status: 201 Created
+└─
+
+┌─ DELETE /api/groups/:groupId/members/:memberId
+│  Description: Supprimer un membre du groupe
+│  Auth Required: ✅ Oui (admin seulement)
+│  Params: groupId (ObjectId), memberId (ObjectId)
+│  Response: { message: "Membre supprimé" }
+│  Status: 200 OK
+└─
+
+┌─ PUT /api/groups/:groupId/members/:memberId/role
+│  Description: Changer le rôle d'un membre
+│  Auth Required: ✅ Oui (admin seulement)
+│  Params: groupId (ObjectId), memberId (ObjectId)
+│  Body:
+│  {
+│    "role": "moderator"
+│  }
+│  Response: { id, members }
+│  Status: 200 OK
+└─
+
+┌─ GET /api/groups/:groupId/members
+│  Description: Lister tous les membres du groupe
+│  Auth Required: ✅ Oui
+│  Params: groupId (ObjectId)
+│  Response: [{ user, role, joinedAt, lastActivityAt }, ...]
+│  Status: 200 OK
+└─
+
+┌─ POST /api/groups/:groupId/leave
+│  Description: Quitter le groupe
+│  Auth Required: ✅ Oui
+│  Params: groupId (ObjectId)
+│  Response: { message: "Vous avez quitté le groupe" }
+│  Status: 200 OK
+└─
+
+═══════════════════════════════════════════════════════════════════════════════
+📱 SESSIONS ENDPOINTS (/api/sessions)
+═══════════════════════════════════════════════════════════════════════════════
+
+┌─ GET /api/sessions
+│  Description: Lister toutes mes sessions actives
+│  Auth Required: ✅ Oui
+│  Response: [{ id, deviceName, userAgent, ipAddress, lastActivity, expiresAt }, ...]
+│  Status: 200 OK
+└─
+
+┌─ POST /api/sessions
+│  Description: Créer une nouvelle session
+│  Auth Required: ✅ Oui
+│  Body:
+│  {
+│    "deviceName": "iPhone 15",
+│    "userAgent": "Mozilla/5.0..."
+│  }
+│  Response: { id, deviceName, userAgent, ipAddress, lastActivity, expiresAt }
+│  Status: 201 Created
+└─
+
+┌─ DELETE /api/sessions/:sessionId
+│  Description: Fermer une session spécifique
+│  Auth Required: ✅ Oui
+│  Params: sessionId (ObjectId)
+│  Response: { message: "Session fermée" }
+│  Status: 200 OK
+└─
+
+┌─ DELETE /api/sessions
+│  Description: Fermer TOUTES les autres sessions
+│  Auth Required: ✅ Oui
+│  Body: {}
+│  Response: { message: "Toutes les autres sessions fermées" }
+│  Status: 200 OK
+└─
+
+═══════════════════════════════════════════════════════════════════════════════
+📁 MEDIA ENDPOINTS (/api/media)
+═══════════════════════════════════════════════════════════════════════════════
+
+┌─ POST /api/media/upload
+│  Description: Uploader un fichier
+│  Auth Required: ✅ Oui
+│  Content-Type: multipart/form-data
+│  Fields:
+│    - file (FormData file)
+│    - messageId (string)
+│  Max Size: 50MB
+│  Allowed Types: images, vidéos, audio, documents
+│  Response: { id, filename, url, size, type, mimetype, metadata }
+│  Status: 201 Created
+└─
+
+┌─ GET /api/media/download/:fileId
+│  Description: Télécharger un fichier
+│  Auth Required: ✅ Oui
+│  Params: fileId (ObjectId)
+│  Response: File Binary
+│  Status: 200 OK (avec header Content-Disposition)
+└─
+
+┌─ DELETE /api/media/:fileId
+│  Description: Supprimer un fichier (uploader seulement)
+│  Auth Required: ✅ Oui
+│  Params: fileId (ObjectId)
+│  Response: { message: "Fichier supprimé" }
+│  Status: 200 OK
+└─
+
+┌─ GET /api/media/:fileId
+│  Description: Obtenir les infos d'un fichier
+│  Auth Required: ✅ Oui
+│  Params: fileId (ObjectId)
+│  Response: { id, filename, originalName, url, size, type, mimetype, uploader }
+│  Status: 200 OK
+└─
+
+═══════════════════════════════════════════════════════════════════════════════
+🔌 WEBSOCKET EVENTS (Socket.io)
+═══════════════════════════════════════════════════════════════════════════════
+
+CLIENT → SERVER EVENTS
+──────────────────────
+
+┌─ socket.emit("typing", { conversationId, userName, isTyping })
+│  Envoie: {"conversationId": "...", "userName": "Alice", "isTyping": true}
+│  Serveur répond: Broadcast à tous les participants
+└─
+
+┌─ socket.emit("mark-conversation-as-read", { conversationId })
+│  Envoie: {"conversationId": "..."}
+│  Serveur répond: Met à jour les unreadCounts
+└─
+
+┌─ socket.emit("message-read", { messageId })
+│  Envoie: {"messageId": "..."}
+│  Serveur répond: Ajoute à readBy
+└─
+
+SERVER → CLIENT EVENTS
+──────────────────────
+
+┌─ socket.on("receive-message", (message) => {...})
+│  Reçoit: { id, sender, content, conversation, status, createdAt, ... }
+│  Émis: Quand quelqu'un envoie un message dans la conversation
+└─
+
+┌─ socket.on("user-typing", ({ conversationId, userName, isTyping }) => {...})
+│  Reçoit: {"conversationId": "...", "userName": "Alice", "isTyping": true}
+│  Émis: Quand quelqu'un tape dans une conversation
+└─
+
+┌─ socket.on("message-updated", (message) => {...})
+│  Reçoit: { id, content, edited: true, editHistory, ... }
+│  Émis: Quand un message est édité
+└─
+
+┌─ socket.on("user-status", () => {...})
+│  Reçoit: null (signal pour rafraîchir)
+│  Émis: Quand un utilisateur se connecte/déconnecte
+└─
+
+┌─ socket.on("disconnect", () => {...})
+│  Émis: Quand la connexion est perdue
+└─
+
+═══════════════════════════════════════════════════════════════════════════════
+📝 HEADERS & AUTHENTIFICATION
+═══════════════════════════════════════════════════════════════════════════════
+
+Authorization Header:
+┌─ Bearer {accessToken}
+│  Example: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+│  Duration: 1 jour
+│  Refresh: Utiliser POST /api/auth/refresh-token
+└─
+
+Content-Type:
+┌─ application/json (par défaut pour les requêtes JSON)
+│  multipart/form-data (pour les uploads de fichiers)
+└─
+
+═══════════════════════════════════════════════════════════════════════════════
+⚠️  CODES DE RÉPONSE HTTP
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ 200 OK              - Requête réussie
+✅ 201 Created         - Ressource créée
+❌ 400 Bad Request     - Paramètres invalides
+❌ 401 Unauthorized    - Token manquant ou invalide
+❌ 403 Forbidden       - Accès refusé (permissions)
+❌ 404 Not Found       - Ressource non trouvée
+❌ 500 Server Error    - Erreur serveur
+
+═══════════════════════════════════════════════════════════════════════════════
+🔒 SÉCURITÉ & BONNES PRATIQUES
+═══════════════════════════════════════════════════════════════════════════════
+
+✓ Tous les endpoints protégés nécessitent un JWT valide
+✓ Les mots de passe sont hachés avec bcrypt
+✓ Les sessions expirent après 7 jours
+✓ Les uploads sont limités à 50MB
+✓ Les types de fichiers sont validés
+✓ Validation des entrées avec Joi
+✓ CORS activé pour http://localhost:5000
+✓ Rate limiting recommandé en production
+
+═══════════════════════════════════════════════════════════════════════════════
+📊 EXEMPLES DE REQUÊTES CURL
+═══════════════════════════════════════════════════════════════════════════════
+
+# S'inscrire
+curl -X POST http://localhost:5000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Alice","email":"alice@test.com","password":"pass123"}'
+
+# Se connecter
+curl -X POST http://localhost:5000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"alice@test.com","password":"pass123"}'
+
+# Lister les utilisateurs
+curl -X GET http://localhost:5000/api/users \
+  -H "Authorization: Bearer {TOKEN}"
+
+# Envoyer un message
+curl -X POST http://localhost:5000/api/messages \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer {TOKEN}" \
+  -d '{"conversation_id":"...","content":"Bonjour!"}'
+
+═══════════════════════════════════════════════════════════════════════════════
