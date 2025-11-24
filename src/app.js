@@ -8,12 +8,9 @@ import contactRoutes from './routes/contacts.js';
 import sessionRoutes from './routes/sessions.js';
 import mediaRoutes from './routes/media.js';
 import groupRoutes from './routes/groups.js';
-import { initSentry } from './config/sentry.js';
 import auth from "./middleware/auth.js";
 
 const app = express();
-
-initSentry(app);
 
 app.use((req, _res, next) => {
   Sentry.addBreadcrumb({
