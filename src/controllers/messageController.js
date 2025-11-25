@@ -43,6 +43,7 @@ export const createOrGetConversation = async (req, res) => {
         const populatedConv = await Conversation.findById(newConversation._id)
           .populate({ path: 'participants', select: 'name avatar isOnline' });
 
+        io.to(newConversation._id.toString()).emit('conversation-created', populatedConv)
 
         res.status(201).json(populatedConv);
     } catch (err) {
