@@ -12,7 +12,7 @@ import auth from "./middleware/auth.js";
 import { initSentry } from "./config/sentry.js";
 
 const app = express();
-const allowedOrigin = process.env.FRONTEND_URL || 'http://localhost:5173';
+const allowedOrigin = process.env.FRONTEND_URL || 'https://front-whatsapp-production.up.railway.app';
 const corsOptions = {
   origin: allowedOrigin,
   credentials: true,
