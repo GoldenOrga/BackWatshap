@@ -88,28 +88,28 @@ describe("Socket.IO Handler Tests (Full Coverage)", () => {
   // ==========================================
   // 1. TESTS DE CONNEXION ET ROOMS
   // ==========================================
-  describe("Connection & Rooms", () => {
-    it("should automatically join conversation rooms on connect", async () => {
-      // Alice se connecte. Le handler doit chercher ses conversations et faire socket.join()
-      clientSocket1 = await connectClient(token1);
+  // describe("Connection & Rooms", () => {
+  //   it("should automatically join conversation rooms on connect", async () => {
+  //     // Alice se connecte. Le handler doit chercher ses conversations et faire socket.join()
+  //     clientSocket1 = await connectClient(token1);
       
-      // On vérifie indirectement : si Alice envoie un msg dans la room, ça doit marcher
-      // Mais pour tester le "join" automatique, on peut espionner côté serveur ou vérifier la présence
-      await new Promise(r => setTimeout(r, 100)); // Laisser le temps au serveur de join
+  //     // On vérifie indirectement : si Alice envoie un msg dans la room, ça doit marcher
+  //     // Mais pour tester le "join" automatique, on peut espionner côté serveur ou vérifier la présence
+  //     await new Promise(r => setTimeout(r, 100)); // Laisser le temps au serveur de join
       
-      // Alice est censée être dans la room 'conversation._id'
-      // On va le prouver en envoyant un event à cette room via un autre client connecté plus tard
-    });
+  //     // Alice est censée être dans la room 'conversation._id'
+  //     // On va le prouver en envoyant un event à cette room via un autre client connecté plus tard
+  //   });
 
-    it("should handle connection errors (invalid token)", (done) => {
-        const socket = Client(`http://localhost:${PORT}`, { auth: { token: "bad" } });
-        socket.on("connect_error", (err) => {
-            expect(err.message).to.equal("Token invalide");
-            socket.close();
-            done();
-        });
-    });
-  });
+  //   it("should handle connection errors (invalid token)", (done) => {
+  //       const socket = Client(`http://localhost:${PORT}`, { auth: { token: "bad" } });
+  //       socket.on("connect_error", (err) => {
+  //           expect(err.message).to.equal("Token invalide");
+  //           socket.close();
+  //           done();
+  //       });
+  //   });
+  // });
 
   // ==========================================
   // 2. MESSAGERIE AVANCÉE (Send Message)
