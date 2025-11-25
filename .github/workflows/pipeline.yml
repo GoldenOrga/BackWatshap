@@ -27,4 +27,12 @@ jobs:
         run: npm i
 
       - name: 🧪 Lancement des tests unitaires
+        env:
+          PORT: 5005
+          MONGO_URI: ${{ secrets.MONGO_URI }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET }}
+          NODE_ENV: development
+          DEBUG: false
+          FRONTEND_URL: http://localhost:5173
         run: npm run coverage
