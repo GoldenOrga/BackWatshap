@@ -24,7 +24,7 @@ jobs:
           cache: npm
 
       - name: 📦 Installation des dépendances
-        run: npm ci
+        run: npm i
 
       - name: 🧪 Lancement des tests unitaires
         run: npm run coverage
