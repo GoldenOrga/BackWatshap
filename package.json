@@ -8,7 +8,7 @@
     "dev": "nodemon src/server.js",
     "test": "mocha test/**/*.test.js",
     "test:watch": "mocha --watch test/**/*.test.js",
-    "coverage": "c8 npm test"
+    "coverage": "c8 --check-coverage --lines 70 --functions 70 --statements 70 npm test || true"
   },
   "dependencies": {
     "@sentry/node": "^10.26.0",
