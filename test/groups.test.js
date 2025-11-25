@@ -219,12 +219,19 @@ describe('API Tests - Group Routes (/api/groups)', () => {
       });
     });
 
-    it('should allow a member to leave', async () => {
-      const res = await request(app)
-        .post(`/api/groups/${group._id}/leave`)
-        .set('Authorization', `Bearer ${authTokenA}`);
+   it('should allow a member to leave', async () => {
+  // Login userB
+  const loginRes = await request(app)
+    .post('/api/auth/login')
+    .send({ email: 'userb@test.com', password: 'password123' });
+  const authTokenB = loginRes.body.accessToken;
 
-      expect(res.statusCode).to.equal(200);
-    });
+  const res = await request(app)
+    .post(`/api/groups/${group._id}/leave`)
+    .set('Authorization', `Bearer ${authTokenB}`);
+
+  expect(res.statusCode).to.equal(200);
+});
+
   });
 });

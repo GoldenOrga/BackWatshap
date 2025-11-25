@@ -58,7 +58,7 @@ describe('WebSocket Tests', () => {
     });
   });
 
-  it('Alice should receive a message from Bob', (done) => {
+  it('Alice should receive a message from Bob', function(done) {
     this.timeout(5000);
     clientSocketAlice = io(`http://localhost:${process.env.PORT}`, { auth: { token: aliceToken }, transports: ['websocket'], reconnection: false });
     clientSocketBob = io(`http://localhost:${process.env.PORT}`, { auth: { token: bobToken }, transports: ['websocket'], reconnection: false });

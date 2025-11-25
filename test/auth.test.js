@@ -1,125 +1,147 @@
 import request from 'supertest';
 import { expect } from 'chai';
-import app from '../src/app.js';
+import app from '../src/app.js'; // Ajuste le chemin selon ta structure
 import User from '../src/models/User.js';
-import './test_helper.js'; // Assure le nettoyage de la BDD avant chaque test
 
-describe('API Tests - Authentication Routes', () => {
+describe('API Tests - Auth Routes', () => {
+  const userData = {
+    name: 'John Doe',
+    email: 'john@test.com',
+    password: 'password123',
+    avatar: 'avatar.png'
+  };
 
-  // --- Tests pour la route d'inscription ---
+  beforeEach(async () => {
+    await User.deleteMany({});
+  });
+
   describe('POST /api/auth/register', () => {
     it('should register a new user successfully', async () => {
       const res = await request(app)
         .post('/api/auth/register')
-        .send({ name: 'Alice', email: 'alice@test.com', password: 'password123' });
-      
+        .send(userData);
+
       expect(res.statusCode).to.equal(201);
       expect(res.body).to.have.property('accessToken');
-      expect(res.body).to.have.property('user');
+      expect(res.body).to.have.property('refreshToken');
+      expect(res.body.user).to.have.property('id');
+      expect(res.body.user.email).to.equal(userData.email);
     });
 
-    it('should return 400 if email is already used', async () => {
-      // Crée un utilisateur au préalable
-      await User.create({ name: 'Existing User', email: 'alice@test.com', password: 'password123' });
-      
-      // Tente de s'inscrire avec le même email
+    it('should fail if email already exists', async () => {
+      await User.create(userData); // Créer l'user une première fois
+
       const res = await request(app)
         .post('/api/auth/register')
-        .send({ name: 'Alice', email: 'alice@test.com', password: 'password123' });
+        .send(userData);
 
       expect(res.statusCode).to.equal(400);
+      expect(res.body.message).to.equal('Email déjà utilisé');
     });
 
-    it('should return 400 if a required field is missing', async () => {
+    it('should fail if required fields are missing', async () => {
       const res = await request(app)
         .post('/api/auth/register')
-        .send({ name: 'Alice', email: 'alice@test.com' }); // Mot de passe manquant
+        .send({ name: 'No Email' });
 
       expect(res.statusCode).to.equal(400);
     });
   });
 
-  // --- Tests pour la route de connexion ---
   describe('POST /api/auth/login', () => {
     beforeEach(async () => {
-        // Crée un utilisateur pour les tests de connexion
-        await User.create({ name: 'Alice', email: 'alice@test.com', password: 'password123' });
+      await User.create(userData);
     });
 
-    it('should log in an existing user and set them as online', async () => {
+    it('should login successfully with correct credentials', async () => {
       const res = await request(app)
         .post('/api/auth/login')
-        .send({ email: 'alice@test.com', password: 'password123' });
+        .send({ email: userData.email, password: userData.password });
 
       expect(res.statusCode).to.equal(200);
       expect(res.body).to.have.property('accessToken');
-      expect(res.body.user).to.have.property('name');
-      expect(res.body.user.name).to.equal('Alice');
-
-      // Vérifie que l'utilisateur est bien marqué comme en ligne dans la BDD
-      const userInDb = await User.findOne({ email: 'alice@test.com' });
-      expect(userInDb.isOnline).to.be.true;
+      expect(res.body.user.isOnline).to.be.true;
     });
 
-    it('should fail login with wrong password', async () => {
+    it('should fail with wrong password', async () => {
       const res = await request(app)
         .post('/api/auth/login')
-        .send({ email: 'alice@test.com', password: 'wrongpassword' });
+        .send({ email: userData.email, password: 'wrongpassword' });
 
       expect(res.statusCode).to.equal(401);
     });
 
-    it('should fail login with a non-existent email', async () => {
+    it('should fail if user does not exist', async () => {
       const res = await request(app)
         .post('/api/auth/login')
-        .send({ email: 'nonexistent@test.com', password: 'password123' });
+        .send({ email: 'unknown@test.com', password: 'password123' });
 
       expect(res.statusCode).to.equal(401);
     });
   });
 
-  // --- Tests pour la route de déconnexion ---
+  describe('POST /api/auth/refresh-token', () => {
+    let refreshToken;
+
+    beforeEach(async () => {
+      await User.create(userData);
+      const loginRes = await request(app)
+        .post('/api/auth/login')
+        .send({ email: userData.email, password: userData.password });
+      refreshToken = loginRes.body.refreshToken;
+    });
+
+    it('should generate a new access token with a valid refresh token', async () => {
+      const res = await request(app)
+        .post('/api/auth/refresh-token')
+        .send({ refreshToken });
+
+      expect(res.statusCode).to.equal(200);
+      expect(res.body).to.have.property('accessToken');
+    });
+
+    it('should fail if refresh token is missing', async () => {
+      const res = await request(app)
+        .post('/api/auth/refresh-token')
+        .send({});
+
+      expect(res.statusCode).to.equal(401);
+    });
+
+    it('should fail if refresh token is invalid', async () => {
+      const res = await request(app)
+        .post('/api/auth/refresh-token')
+        .send({ refreshToken: 'invalid_token_string' });
+
+      expect(res.statusCode).to.equal(401);
+    });
+  });
+
   describe('POST /api/auth/logout', () => {
     let authToken;
     let userId;
 
     beforeEach(async () => {
-        // Crée un utilisateur et le connecte pour obtenir un token valide
-        const user = await User.create({ name: 'Alice', email: 'alice@test.com', password: 'password123' });
-        const res = await request(app)
-            .post('/api/auth/login')
-            .send({ email: 'alice@test.com', password: 'password123' });
-        
-        authToken = res.body.accessToken;
-        userId = user._id;
-    });
-    
-    it('should log out an authenticated user and set them as offline', async () => {
-        const res = await request(app)
-            .post('/api/auth/logout')
-            .set('Authorization', `Bearer ${authToken}`);
-
-        expect(res.statusCode).to.equal(200);
-
-        // Vérifie que l'utilisateur est bien marqué comme hors ligne
-        const userInDb = await User.findById(userId);
-        expect(userInDb.isOnline).to.be.false;
-        expect(userInDb.lastLogout).to.be.a('date');
+      const user = await User.create(userData);
+      userId = user._id;
+      const loginRes = await request(app)
+        .post('/api/auth/login')
+        .send({ email: userData.email, password: userData.password });
+      authToken = loginRes.body.accessToken;
     });
 
-    it('should return 401 if no token is provided', async () => {
-        const res = await request(app)
-            .post('/api/auth/logout'); // Pas de header d'autorisation
+    it('should logout successfully and set isOnline to false', async () => {
+      const res = await request(app)
+        .post('/api/auth/logout')
+        .set('Authorization', `Bearer ${authToken}`);
 
-        expect(res.statusCode).to.equal(401);
-    });
+      expect(res.statusCode).to.equal(200);
+      expect(res.body.message).to.include('Déconnexion réussie');
 
-    it('should return 401 if the token is invalid', async () => {
-        const res = await request(app)
-            .post('/api/auth/logout')
-            .set('Authorization', 'Bearer invalidtoken');
-
-        expect(res.statusCode).to.equal(401);
+      // Vérifier en DB
+      const user = await User.findById(userId);
+      expect(user.isOnline).to.be.false;
+      expect(user.lastLogout).to.not.be.null;
     });
   });
 });

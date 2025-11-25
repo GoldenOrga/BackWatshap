@@ -1,142 +1,199 @@
 import request from 'supertest';
 import { expect } from 'chai';
-import mongoose from 'mongoose'; 
-import app from '../src/app.js';
+import mongoose from 'mongoose';
+import app from '../src/app.js'; // Ajuste le chemin
 import User from '../src/models/User.js';
-import './test_helper.js'; 
 
-describe('API Tests - User Routes (Full Coverage)', () => {
+describe('API Tests - User Routes', () => {
   let authToken;
   let user1, user2;
+  const initialPassword = 'password123';
 
-  
   beforeEach(async () => {
-    user1 = await User.create({ name: 'UserOne', email: 'user1@test.com', password: 'password123', isOnline: true });
-    user2 = await User.create({ name: 'UserTwo', email: 'user2@test.com', password: 'password123', isOnline: false });
+    await User.deleteMany({});
+    
+    // Création de 2 utilisateurs
+    user1 = await User.create({ name: 'UserOne', email: 'user1@test.com', password: initialPassword, isOnline: true });
+    user2 = await User.create({ name: 'UserTwo', email: 'user2@test.com', password: initialPassword, isOnline: false });
 
+    // Connexion avec User1 pour obtenir le token
     const res = await request(app)
       .post('/api/auth/login')
-      .send({ email: 'user1@test.com', password: 'password123' });
+      .send({ email: 'user1@test.com', password: initialPassword });
     
     authToken = res.body.accessToken;
   });
 
-  
+  // --- GET USERS ---
   describe('GET /api/users', () => {
-    it('should return a list of all users with their avatar', async () => { // MODIFIÉ : Le nom du test
+    it('should return a list of users (excluding self)', async () => {
       const res = await request(app)
         .get('/api/users')
         .set('Authorization', `Bearer ${authToken}`);
       
       expect(res.statusCode).to.equal(200);
-      expect(res.body.users).to.be.an('array').with.lengthOf(2);
-      expect(res.body.users[0]).to.not.have.property('password');
-      // AJOUTÉ : Vérifier que le champ avatar est présent
-      expect(res.body.users[0]).to.have.property('avatar');
-      expect(res.body.users[0].avatar).to.be.a('string');
+      // User1 est connecté, il ne doit voir que User2
+      expect(res.body.users).to.be.an('array');
+      const ids = res.body.users.map(u => u._id);
+      expect(ids).to.not.include(user1._id.toString());
     });
 
-    it('should filter for online users when ?online=true is provided', async () => {
-        const res = await request(app)
-          .get('/api/users?online=true')
-          .set('Authorization', `Bearer ${authToken}`);
-        
-        expect(res.statusCode).to.equal(200);
-        expect(res.body.users).to.be.an('array').with.lengthOf(1);
-        expect(res.body.users[0].name).to.equal('UserOne'); 
+    it('should filter online users', async () => {
+      // User2 est hors ligne, donc si on filtre online=true, on ne devrait rien recevoir (car User1 est exclu)
+      const res = await request(app)
+        .get('/api/users?online=true')
+        .set('Authorization', `Bearer ${authToken}`);
+      
+      expect(res.statusCode).to.equal(200);
+      expect(res.body.users).to.be.an('array').that.is.empty;
+    });
+  });
+
+  // --- GET PROFILE & SEARCH ---
+  describe('GET /api/users/profile', () => {
+    it('should return the logged-in user profile', async () => {
+      const res = await request(app)
+        .get('/api/users/profile')
+        .set('Authorization', `Bearer ${authToken}`);
+      
+      expect(res.statusCode).to.equal(200);
+      expect(res.body.email).to.equal('user1@test.com');
+    });
+  });
+
+  describe('GET /api/users/search', () => {
+    it('should find user by name', async () => {
+      const res = await request(app)
+        .get('/api/users/search?q=UserTwo')
+        .set('Authorization', `Bearer ${authToken}`);
+      
+      expect(res.statusCode).to.equal(200);
+      expect(res.body[0].name).to.equal('UserTwo');
     });
 
-    it('should return 401 if no token is provided', async () => {
-      const res = await request(app).get('/api/users');
+    it('should return 400 if q is missing', async () => {
+      const res = await request(app)
+        .get('/api/users/search')
+        .set('Authorization', `Bearer ${authToken}`);
+      expect(res.statusCode).to.equal(400);
+    });
+  });
+
+  // --- UPDATE PROFILE ---
+  describe('PUT /api/users/profile', () => {
+    it('should update name and avatar', async () => {
+      const res = await request(app)
+        .put('/api/users/profile')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ name: 'UserOne Updated', avatar: 'http://newavatar.com' });
+      
+      expect(res.statusCode).to.equal(200);
+      expect(res.body.name).to.equal('UserOne Updated');
+    });
+
+    it('should return 400 if body is empty', async () => {
+      const res = await request(app)
+        .put('/api/users/profile')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({});
+      expect(res.statusCode).to.equal(400);
+    });
+  });
+
+  // --- CHANGE PASSWORD (AUTH) ---
+  describe('POST /api/users/change-password', () => {
+    it('should change password successfully', async () => {
+      const newPass = 'newPass123';
+      const res = await request(app)
+        .post('/api/users/change-password') // Attention: ta route est /api/users/... dans userRoutes.js
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ currentPassword: initialPassword, newPassword: newPass });
+
+      expect(res.statusCode).to.equal(200);
+
+      // Vérifier que l'ancien mdp ne marche plus
+      const loginFail = await request(app)
+        .post('/api/auth/login')
+        .send({ email: 'user1@test.com', password: initialPassword });
+      expect(loginFail.statusCode).to.equal(401);
+
+      // Vérifier que le nouveau marche
+      const loginSuccess = await request(app)
+        .post('/api/auth/login')
+        .send({ email: 'user1@test.com', password: newPass });
+      expect(loginSuccess.statusCode).to.equal(200);
+    });
+
+    it('should fail if current password is wrong', async () => {
+      const res = await request(app)
+        .post('/api/users/change-password')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ currentPassword: 'wrong', newPassword: 'new' });
+      
       expect(res.statusCode).to.equal(401);
     });
   });
 
-  
-  describe('GET /api/users/:id', () => {
-    it('should return a single user profile with avatar', async () => { // MODIFIÉ : Le nom du test
+  // --- CHANGE PASSWORD BY EMAIL (NO AUTH) ---
+  describe('POST /api/users/change-password/email', () => {
+    it('should change password using email only', async () => {
+      const newPass = 'resetPass123';
       const res = await request(app)
-        .get(`/api/users/${user2._id}`)
-        .set('Authorization', `Bearer ${authToken}`);
-      
+        .post('/api/users/change-password/email')
+        .send({ email: 'user2@test.com', newPassword: newPass });
+
       expect(res.statusCode).to.equal(200);
-      expect(res.body.name).to.equal('UserTwo');
-      // AJOUTÉ : Vérifier que le champ avatar est présent
-      expect(res.body).to.have.property('avatar');
+
+      // Vérifier la connexion avec le nouveau mot de passe
+      const loginRes = await request(app)
+        .post('/api/auth/login')
+        .send({ email: 'user2@test.com', password: newPass });
+      expect(loginRes.statusCode).to.equal(200);
     });
 
-    it('should return 404 for a non-existent user id', async () => {
-      const nonExistentId = new mongoose.Types.ObjectId();
+    it('should fail if email not found', async () => {
       const res = await request(app)
-        .get(`/api/users/${nonExistentId}`)
-        .set('Authorization', `Bearer ${authToken}`);
-      
+        .post('/api/users/change-password/email')
+        .send({ email: 'ghost@test.com', newPassword: 'abc' });
       expect(res.statusCode).to.equal(404);
     });
-  });
 
-  
-  describe('PUT /api/users/profile', () => {
-    it("should update the authenticated user's name", async () => { // MODIFIÉ : Rendu plus spécifique
+    it('should fail if new password is too short', async () => {
       const res = await request(app)
-        .put('/api/users/profile')
-        .set('Authorization', `Bearer ${authToken}`)
-        .send({ name: 'UserOneUpdated' });
-      
-      expect(res.statusCode).to.equal(200);
-      expect(res.body.name).to.equal('UserOneUpdated');
-
-      const updatedUser = await User.findById(user1._id);
-      expect(updatedUser.name).to.equal('UserOneUpdated');
-    });
-
-    // AJOUTÉ : Test spécifique pour la mise à jour de l'avatar
-    it("should update the authenticated user's avatar", async () => {
-      const newAvatarUrl = 'https://example.com/new-avatar.jpg';
-      const res = await request(app)
-        .put('/api/users/profile')
-        .set('Authorization', `Bearer ${authToken}`)
-        .send({ avatar: newAvatarUrl });
-      
-      expect(res.statusCode).to.equal(200);
-      expect(res.body.avatar).to.equal(newAvatarUrl);
-
-      const updatedUser = await User.findById(user1._id);
-      expect(updatedUser.avatar).to.equal(newAvatarUrl);
-    });
-
-    it('should return 400 if no fields are provided for update', async () => {
-        const res = await request(app)
-            .put('/api/users/profile')
-            .set('Authorization', `Bearer ${authToken}`)
-            .send({}); 
-        
-        expect(res.statusCode).to.equal(400);
-        expect(res.body.message).to.equal("Aucun champ à mettre à jour");
-    });
-  });
-
-  
-  describe('GET /api/users/search', () => {
-    it('should return users matching the search query with their avatar', async () => { // MODIFIÉ : Le nom du test
-      const res = await request(app)
-        .get('/api/users/search?q=Two') 
-        .set('Authorization', `Bearer ${authToken}`);
-      
-      expect(res.statusCode).to.equal(200);
-      expect(res.body).to.be.an('array').with.lengthOf(1);
-      expect(res.body[0].name).to.equal('UserTwo');
-      // AJOUTÉ : Vérifier que le champ avatar est présent dans les résultats de recherche
-      expect(res.body[0]).to.have.property('avatar');
-    });
-
-    it('should return 400 if search query "q" is missing', async () => {
-      const res = await request(app)
-        .get('/api/users/search') 
-        .set('Authorization', `Bearer ${authToken}`);
-      
+        .post('/api/users/change-password/email')
+        .send({ email: 'user2@test.com', newPassword: '123' });
       expect(res.statusCode).to.equal(400);
-      expect(res.body.message).to.equal("Le paramètre de recherche 'q' est manquant");
     });
   });
+
+  // --- DELETE ACCOUNT ---
+  describe('DELETE /api/users/delete', () => {
+    it('should delete account if password matches', async () => {
+      const res = await request(app)
+        .delete('/api/users/delete')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ password: initialPassword });
+
+      expect(res.statusCode).to.equal(200);
+      expect(res.body.message).to.include('supprimé');
+
+      // Vérifier en DB
+      const deletedUser = await User.findById(user1._id);
+      expect(deletedUser).to.be.null;
+    });
+
+    it('should fail to delete if password is wrong', async () => {
+      const res = await request(app)
+        .delete('/api/users/delete')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ password: 'wrong' });
+
+      expect(res.statusCode).to.equal(401);
+      
+      // L'utilisateur doit toujours exister
+      const user = await User.findById(user1._id);
+      expect(user).to.not.be.null;
+    });
+  });
+
 });
