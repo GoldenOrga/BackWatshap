@@ -162,11 +162,11 @@ async changePasswordWithToken(req, res) {
   // =======================
   async changePasswordByEmail(req, res) {
     try {
-      const { email, currentPassword, newPassword } = req.body;
+      const { email, newPassword } = req.body;
 
-      if (!email || !currentPassword || !newPassword) {
+      if (!email  || !newPassword) {
         return res.status(400).json({
-          message: "Les champs 'email', 'currentPassword' et 'newPassword' sont requis",
+          message: "Les champs 'email' et 'newPassword' sont requis",
         });
       }
 
@@ -178,10 +178,7 @@ async changePasswordWithToken(req, res) {
       }
 
       // Vérifier ancien mot de passe
-      const isMatch = await user.comparePassword(currentPassword);
-      if (!isMatch) {
-        return res.status(401).json({ message: "Mot de passe actuel incorrect" });
-      }
+      
 
       if (newPassword.length < 6) {
         return res.status(400).json({
