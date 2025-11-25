@@ -27,6 +27,9 @@ app.use(cors({
   methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
   allowedHeaders: ['Content-Type','Authorization'],
 }));
+
+initSentry(app);
+
 app.options('*', cors());
 
 app.use((req, _res, next) => {
