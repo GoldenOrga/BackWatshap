@@ -5,7 +5,7 @@ const attachmentSchema = new mongoose.Schema({
   message: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Message',
-    required: true
+    required: false
   },
   uploader: {
     type: mongoose.Schema.Types.ObjectId,
